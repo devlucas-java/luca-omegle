@@ -3,6 +3,7 @@ module github.com/devlucas-java/luca-omegle
 go 1.26.2
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/panjf2000/gnet/v2 v2.9.8
 	github.com/pion/webrtc/v4 v4.2.13
 )

@@ -16,5 +16,6 @@ func main() {
 	s := socket.NewServer(logger.NewLogger(logger.TRACE))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", s.HandlerWS)
+	mux.HandleFunc("/get", s.GetClients)
 	http.ListenAndServe(":8080", mux)
 }

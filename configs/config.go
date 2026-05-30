@@ -65,7 +65,7 @@ func InitDB() *gorm.DB {
 
 	db, err := gorm.Open(postgres.Open(url), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("error in init db, %w", err)
+		log.Fatalf("error in init db, %v", err)
 	}
 	return db
 }

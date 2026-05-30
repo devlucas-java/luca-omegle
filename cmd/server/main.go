@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	_ "github.com/coder/websocket"
+	"github.com/devlucas-java/luca-omegle/configs"
 	"github.com/devlucas-java/luca-omegle/pkg/logger"
 
 	"github.com/devlucas-java/luca-omegle/internal/delivery/socket"
@@ -13,9 +14,18 @@ import (
 
 func main() {
 
-	s := socket.NewServer(logger.NewLogger(logger.TRACE))
+	conf := configs.InitConfig()
+	log := logger.NewLogger(logger.TRACE)
+
+	s := socket.NewWSHandler(log.WithComponent("WS_Handler"))
+	h := socket.NewDashboard(log.WithComponent("WS_Dashboard"))
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ws", s.HandlerWS)
-	mux.HandleFunc("/get", s.GetClients)
-	http.ListenAndServe(":8080", mux)
+	mux.HandleFunc("/ws", s.WSHandlerS)
+	mux.HandleFunc("/get", h.GetClients)
+	mux.HandleFunc("/ws/dashboard", h.WSDashboard)
+	mux.Handle("/", http.FileServer(http.Dir("./static/")))
+
+	port := ":" + conf.ServerPort
+	http.ListenAndServe(port, mux)
 }

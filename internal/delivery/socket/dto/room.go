@@ -3,27 +3,27 @@ package dto
 import "github.com/google/uuid"
 
 type Room struct {
-	ID      uuid.UUID          `json:"id"`
-	Name    string             `json:"name"`
-	Clients map[string]*Client `json:"clients"`
+	ID      uuid.UUID           `json:"id"`
+	Name    string              `json:"name"`
+	Clients map[string]*Session `json:"clients"`
 }
 
 func NewRoom(name string) *Room {
 	return &Room{
 		ID:      uuid.New(),
 		Name:    name,
-		Clients: make(map[string]*Client),
+		Clients: make(map[string]*Session),
 	}
 }
 
-func (t *Room) AddClient(c *Client) {
-	t.Clients[c.ID] = c
+func (t *Room) AddClient(c *Session) {
+	t.Clients[c.User.ID] = c
 }
 
-func (t *Room) RemoveClient(c *Client) {
-	delete(t.Clients, c.ID)
+func (t *Room) RemoveClient(c *Session) {
+	delete(t.Clients, c.User.ID)
 }
 
-func (t *Room) GetClient(id string) *Client {
+func (t *Room) GetClient(id string) *Session {
 	return t.Clients[id]
 }

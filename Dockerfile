@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/app .
-COPY .default.env .env
+COPY default.env default.env
 
 EXPOSE 8080
 

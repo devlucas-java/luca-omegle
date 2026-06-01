@@ -32,14 +32,14 @@ var conf *Config
 func InitConfig() *Config {
 	conf = &Config{}
 
-	viper.SetConfigFile(".default.env")
+	viper.SetConfigFile("default.env")
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatalf("log in ReadConfig viper, error: %v \n", err.Error())
+		log.Printf("default.env not found or unreadable (%v), falling back to environment variables\n", err)
 	}
 
 	err = viper.Unmarshal(conf)
@@ -49,9 +49,9 @@ func InitConfig() *Config {
 	return conf
 }
 
-func InitCache(cfg *Config) {
+func InitCache(cfg *Config) *redis.Client {
 
-	redis.NewClient(&redis.Options{
+	return redis.NewClient(&redis.Options{
 		Addr:     cfg.ChHost + ":" + cfg.ChPort,
 		Password: cfg.ChPassword,
 		DB:       cfg.ChDB,

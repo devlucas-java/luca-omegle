@@ -24,7 +24,10 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - default.env
+      - ./default.env
     depends_on:
       - redis
       - postgres
+
+volumes:
+  postgres_data:

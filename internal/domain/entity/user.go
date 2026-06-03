@@ -8,6 +8,8 @@ type User struct {
 	ID        string
 	UserName  string
 	IsWaiting bool
+	IsOnline  bool
+	RoomID    string
 }
 
 func NewUser(username string) *User {
@@ -19,4 +21,14 @@ func NewUser(username string) *User {
 
 func (t *User) Equals(id string) bool {
 	return t.ID == id
+}
+
+func (u *User) AssignRoom(roomID string) {
+	u.RoomID = roomID
+	u.IsWaiting = false
+}
+
+func (u *User) ClearRoom() {
+	u.RoomID = ""
+	u.IsWaiting = true
 }

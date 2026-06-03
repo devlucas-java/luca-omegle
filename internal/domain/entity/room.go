@@ -2,35 +2,54 @@ package entity
 
 import "github.com/google/uuid"
 
+const MaxUsersPerRoom = 2
+
 type Room struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Users    []*User `json:"users"`
-	Messages []*Message
+	ID       string     `json:"id"`
+	Name     string     `json:"name"`
+	UsersId  []string   `json:"users"`
+	Messages []*Message `json:"messages,omitempty"`
 }
 
-func NewRoom(name string) *Room {
+func NewRoom() *Room {
 	return &Room{
-		ID:    uuid.New().String(),
-		Name:  name,
-		Users: make([]*User, 0),
+		ID:      uuid.New().String(),
+		Name:    uuid.New().String(),
+		UsersId: make([]string, 0, MaxUsersPerRoom),
 	}
 }
 
-func (t *Room) AddUser(user *User) {
-	t.Users = append(t.Users, user)
+func (t *Room) IsFull() bool {
+	return len(t.UsersId) >= MaxUsersPerRoom
 }
 
-func (t *Room) RemoveUser(user *User) {
-	var list []*User
+func (t *Room) IsEmpty() bool {
+	return len(t.UsersId) == 0
+}
 
-	for _, u := range t.Users {
-		if !u.Equals(user.ID) {
-
-			list = append(list, u)
-			t.Users = list
+func (t *Room) HasUser(userID string) bool {
+	for _, id := range t.UsersId {
+		if id == userID {
+			return true
 		}
 	}
+	return false
+}
+
+func (t *Room) AddUser(userId string) {
+	if !t.HasUser(userId) {
+		t.UsersId = append(t.UsersId, userId)
+	}
+}
+
+func (t *Room) RemoveUser(userId string) {
+	list := make([]string, 0, len(t.UsersId))
+	for _, u := range t.UsersId {
+		if u != userId {
+			list = append(list, u)
+		}
+	}
+	t.UsersId = list
 }
 
 func (t *Room) AddMessage(msg *Message) {
@@ -44,7 +63,8 @@ func (t *Room) RemoveMessage(message *Message) {
 		if !msg.Equals(message.ID) {
 
 			list = append(list, msg)
-			t.Messages = list
 		}
 	}
+
+	t.Messages = list
 }

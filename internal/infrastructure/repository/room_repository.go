@@ -7,7 +7,8 @@ import (
 )
 
 type RoomRepository interface {
-	Create(ctx context.Context, room *entity.Room) error
+	Set(ctx context.Context, room *entity.Room) error
 	FindByID(ctx context.Context, roomID string) (*entity.Room, error)
 	DeleteByID(ctx context.Context, roomID string) error
+	GetIDs(ctx context.Context) []string
 }

@@ -24,7 +24,7 @@ func NewUserService(
 }
 
 func (u *UserService) RegisterUser(ctx context.Context, user *entity.User) error {
-	return u.Repository.Create(ctx, user)
+	return u.Repository.Set(ctx, user)
 }
 
 func (u *UserService) DeleteUser(ctx context.Context, user *entity.User) error {

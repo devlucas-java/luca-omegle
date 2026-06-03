@@ -23,10 +23,10 @@ func NewUserService(
 	}
 }
 
-func (u *UserService) RegisterUser(ctx context.Context, user *entity.User) error {
-	return u.Repository.Set(ctx, user)
+func (u *UserService) Register(ctx context.Context, user *entity.User) (*entity.User, error) {
+	return user, u.Repository.Set(ctx, user)
 }
 
-func (u *UserService) DeleteUser(ctx context.Context, user *entity.User) error {
+func (u *UserService) Delete(ctx context.Context, user *entity.User) error {
 	return u.Repository.DeleteByID(ctx, user.ID)
 }

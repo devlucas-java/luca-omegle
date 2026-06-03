@@ -10,8 +10,21 @@ type Session struct {
 	User *entity.User
 }
 
-type Message struct {
-	Content  string `json:"content"`
-	RoomID   string `json:"room_id"`
-	Username string `json:"username"`
+func NewSession(c *websocket.Conn, u *entity.User) *Session {
+	return &Session{
+		Conn: c,
+		User: u,
+	}
+}
+
+type Broadcast struct {
+	*Session
+	Msg *entity.Message
+}
+
+func NewBroadcast(s *Session, m *entity.Message) *Broadcast {
+	return &Broadcast{
+		Session: s,
+		Msg:     m,
+	}
 }

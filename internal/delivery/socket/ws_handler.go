@@ -6,17 +6,15 @@ import (
 	"github.com/coder/websocket"
 	"github.com/devlucas-java/luca-omegle/internal/application/service"
 	"github.com/devlucas-java/luca-omegle/internal/delivery/socket/dto"
+	"github.com/devlucas-java/luca-omegle/internal/domain/entity"
 	"github.com/devlucas-java/luca-omegle/pkg/logger"
 )
 
 type WSHandler struct {
-	log             *logger.Logger
-	userService     *service.UserService
-	broadcastChan   chan dto.Session
-	subscribeChan   chan dto.Session
-	unSubscribeChan chan dto.Session
-	dashboardChan   chan dto.Session
-	disconnectChan  chan dto.Session
+	log           *logger.Logger
+	userService   *service.UserService
+	broadcastChan chan *dto.Broadcast
+	waitingChan   chan *dto.Session
 }
 
 func NewWSHandler(
@@ -24,13 +22,10 @@ func NewWSHandler(
 	us *service.UserService,
 ) *WSHandler {
 	return &WSHandler{
-		log:             l,
-		userService:     us,
-		broadcastChan:   make(chan dto.Session, 100),
-		subscribeChan:   make(chan dto.Session, 100),
-		unSubscribeChan: make(chan dto.Session, 100),
-		dashboardChan:   make(chan dto.Session, 100),
-		disconnectChan:  make(chan dto.Session, 100),
+		log:           l,
+		userService:   us,
+		broadcastChan: make(chan *dto.Broadcast, 100),
+		waitingChan:   make(chan *dto.Session, 100),
 	}
 }
 
@@ -44,25 +39,34 @@ func (t *WSHandler) WSHandlerS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close(websocket.StatusAbnormalClosure, "closed")
 
+	user, err := t.userService.Register(r.Context(), entity.NewUser(nickname))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	session := dto.NewSession(conn, user)
 	for {
 
 		_, data, _ := conn.Read(r.Context())
 
 		switch string(data) {
 		case "BROADCAST":
-			go Broadcast(nickname, string(data))
+			go Broadcast(nickname, string(data)) // tengo que hacer una funcion de extrair el type de la message y extrair el contenido
+			msg := entity.NewMessage("", "", nickname)
+			t.broadcastChan <- dto.NewBroadcast(session, msg)
 
 		case "SUBSCRIBE":
 			go Subscribe(nickname)
 
 		case "UNSUBSCRIBE":
 			go Unsubscribe(nickname)
+			t.waitingChan <- session
 
 		case "DASHBOARD":
 			go Dashboard()
 
 		case "DISCONNECT":
-			go Disconnect(nickname)
+			Disconnect(nickname, session)
 		}
 	}
 }

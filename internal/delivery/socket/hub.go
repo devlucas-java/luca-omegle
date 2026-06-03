@@ -1,12 +1,13 @@
 package socket
 
+import "github.com/devlucas-java/luca-omegle/internal/delivery/socket/dto"
+
 type TypeMessage string
 
 const (
 	SUBSCRIBE   TypeMessage = "SUBSCRIBE"
 	UNSUBSCRIBE TypeMessage = "UNSUBSCRIBE"
 	BRODCAST    TypeMessage = "BRODCAST"
-	NEXT        TypeMessage = "NEXT"
 	DISCONNECT  TypeMessage = "DISCONNECT"
 	DASHBOARD   TypeMessage = "DASHBOARD"
 )
@@ -27,7 +28,7 @@ func Next(chatID string) {
 
 }
 
-func Disconnect(chatID string) {
+func Disconnect(chatID string, session *dto.Session) {
 
 }
 

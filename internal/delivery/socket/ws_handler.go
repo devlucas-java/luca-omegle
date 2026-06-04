@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -11,81 +12,95 @@ import (
 )
 
 type WSHandler struct {
-	log           *logger.Logger
-	userService   *service.UserService
-	broadcastChan chan *dto.Broadcast
-	waitingChan   chan *dto.Session
+	log         *logger.Logger
+	userService *service.UserService
+	hub         *Hub
 }
 
-func NewWSHandler(
-	l *logger.Logger,
-	us *service.UserService,
-) *WSHandler {
-	return &WSHandler{
-		log:           l,
-		userService:   us,
-		broadcastChan: make(chan *dto.Broadcast, 100),
-		waitingChan:   make(chan *dto.Session, 100),
-	}
+func NewWSHandler(log *logger.Logger, us *service.UserService, hub *Hub) *WSHandler {
+	return &WSHandler{log: log, userService: us, hub: hub}
 }
 
-func (t *WSHandler) WSHandlerS(w http.ResponseWriter, r *http.Request) {
-
-	nickname := getNickname(r)
-
+func (h *WSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := acceptWS(w, r)
 	if err != nil {
+		h.log.Errorf("ws accept: %v", err)
 		return
 	}
-	defer conn.Close(websocket.StatusAbnormalClosure, "closed")
 
-	user, err := t.userService.Register(r.Context(), entity.NewUser(nickname))
+	nickname := nickFromQuery(r)
+	user, err := h.userService.Register(r.Context(), entity.NewUser(nickname))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		h.log.Errorf("register user: %v", err)
+		conn.Close(websocket.StatusInternalError, "registration failed")
 		return
 	}
+
 	session := dto.NewSession(conn, user)
+	h.hub.Register(session)
+	defer func() {
+		h.hub.disconnectCh <- disconnectEvent{session: session}
+		conn.Close(websocket.StatusNormalClosure, "bye")
+	}()
+
+	h.log.Infof("user %s (%s) connected", user.ID, nickname)
+
 	for {
-
-		_, data, _ := conn.Read(r.Context())
-
-		switch string(data) {
-		case "BROADCAST":
-			go Broadcast(nickname, string(data)) // tengo que hacer una funcion de extrair el type de la message y extrair el contenido
-			msg := entity.NewMessage("", "", nickname)
-			t.broadcastChan <- dto.NewBroadcast(session, msg)
-
-		case "SUBSCRIBE":
-			go Subscribe(nickname)
-
-		case "UNSUBSCRIBE":
-			go Unsubscribe(nickname)
-			t.waitingChan <- session
-
-		case "DASHBOARD":
-			go Dashboard()
-
-		case "DISCONNECT":
-			Disconnect(nickname, session)
+		_, data, err := conn.Read(r.Context())
+		if err != nil {
+			var wsErr websocket.CloseError
+			if errors.As(err, &wsErr) {
+				h.log.Infof("user %s closed connection: %v", user.ID, wsErr)
+			} else {
+				h.log.Errorf("user %s read error: %v", user.ID, err)
+			}
+			return
 		}
+
+		frame, err := dto.ParseFrame(string(data))
+		if err != nil {
+			h.log.Warnf("user %s bad frame: %v", user.ID, err)
+			_ = session.SendError(r.Context(), "bad frame: "+err.Error())
+			continue
+		}
+
+		h.dispatch(session, frame)
+	}
+}
+
+func (h *WSHandler) dispatch(s *dto.Session, f *dto.Frame) {
+	switch f.Command {
+	case dto.CmdSend:
+		h.hub.sendCh <- sendEvent{session: s, frame: f}
+
+	case dto.CmdSubscribe:
+		h.hub.subscribeCh <- subscribeEvent{session: s}
+
+	case dto.CmdNext:
+		h.hub.subscribeCh <- subscribeEvent{session: s}
+
+	case dto.CmdDisconnect:
+		h.hub.disconnectCh <- disconnectEvent{session: s}
+
+	case dto.CmdDashboard:
+		h.log.Debugf("DASHBOARD requested by %s", s.User.ID)
+
+	default:
+		h.log.Warnf("unknown command %q from %s", f.Command, s.User.ID)
+		_ = s.SendError(nil, "unknown command: "+string(f.Command))
 	}
 }
 
 func acceptWS(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+	return websocket.Accept(w, r, &websocket.AcceptOptions{
 		OriginPatterns:     []string{"*"},
 		InsecureSkipVerify: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
 }
 
-func getNickname(r *http.Request) string {
-	nickname := r.URL.Query().Get("nickname")
-	if nickname == "" {
-		nickname = "anonymous"
+func nickFromQuery(r *http.Request) string {
+	if n := r.URL.Query().Get("nickname"); n != "" {
+		return n
 	}
-	return nickname
+	return "anonymous"
 }

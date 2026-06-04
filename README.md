@@ -27,7 +27,7 @@ body\x00
 |--------------|--------------------|--------------------------------------------------|
 | `SUBSCRIBE`  | —                  | Entra a la cola de espera para ser emparejado    |
 | `NEXT`       | —                  | Sale del room actual y vuelve a la cola          |
-| `SEND`       | `room-id`          | Envía un mensaje al room                         |
+| `SEND`       | —                  | Envía un mensaje al room actual                  |
 | `DISCONNECT` | —                  | Cierra la sesión limpiamente                     |
 | `DASHBOARD`  | —                  | Solicita datos del dashboard (pendiente)         |
 
@@ -58,7 +58,6 @@ room-id:f3a1b2c4-...
 
 # Cliente envía mensaje
 SEND
-room-id:f3a1b2c4-...
 
 Hola!\x00
 

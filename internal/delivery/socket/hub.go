@@ -128,15 +128,10 @@ func (h *Hub) pair(ctx context.Context, s1, s2 *dto.Session) {
 }
 
 func (h *Hub) handleSend(ctx context.Context, ev sendEvent) {
-	roomID, err := ev.frame.MustHeader("room-id")
-	if err != nil {
-		_ = ev.session.SendError(ctx, err.Error())
-		return
-	}
-
-	if ev.session.User.RoomID != roomID {
-		_ = ev.session.SendError(ctx, "you are not in room "+roomID)
-		h.log.Warnf("user %s tried to send to room %s but is in room %q", ev.session.User.ID, roomID, ev.session.User.RoomID)
+	roomID := ev.session.User.RoomID
+	if roomID == "" {
+		_ = ev.session.SendError(ctx, "you are not in a room")
+		h.log.Warnf("user %s tried to send a message without being in a room", ev.session.User.ID)
 		return
 	}
 

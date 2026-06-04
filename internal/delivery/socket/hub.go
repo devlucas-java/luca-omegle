@@ -85,17 +85,24 @@ func (h *Hub) Run(ctx context.Context) {
 }
 
 func (h *Hub) matchmaker(ctx context.Context) {
+	var waiting *dto.Session
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case s1 := <-h.waitingQueue:
-			select {
-			case <-ctx.Done():
-				return
-			case s2 := <-h.waitingQueue:
-				go h.pair(ctx, s1, s2)
+		case s := <-h.waitingQueue:
+			if waiting == nil {
+				waiting = s
+				continue
 			}
+			if waiting.User.ID == s.User.ID {
+				// same user subscribed twice, keep the latest and discard the old slot
+				waiting = s
+				continue
+			}
+			s1, s2 := waiting, s
+			waiting = nil
+			go h.pair(ctx, s1, s2)
 		}
 	}
 }

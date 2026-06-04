@@ -109,6 +109,11 @@ func (h *Hub) pair(ctx context.Context, s1, s2 *dto.Session) {
 		return
 	}
 
+	// JoinRandom updates RoomID inside the user structs passed to it,
+	// but s1.User / s2.User are the original pointers — sync them back.
+	s1.User.AssignRoom(room.ID)
+	s2.User.AssignRoom(room.ID)
+
 	connFrame := dto.NewFrame(dto.CmdConnected, "", map[string]string{
 		"room-id": room.ID,
 	})
@@ -155,6 +160,7 @@ func (h *Hub) handleSubscribe(ctx context.Context, ev subscribeEvent) {
 			_ = ev.session.SendError(ctx, fmt.Sprintf("could not leave room: %v", err))
 			return
 		}
+		ev.session.User.ClearRoom()
 	}
 	h.waitingQueue <- ev.session
 	h.log.Infof("user %s added to waiting queue", ev.session.User.ID)
@@ -167,7 +173,9 @@ func (h *Hub) handleUnsubscribe(ctx context.Context, ev unsubscribeEvent) {
 	if err := h.roomService.LeaveRoom(ctx, ev.session.User); err != nil {
 		h.log.Errorf("handleUnsubscribe: %v", err)
 		_ = ev.session.SendError(ctx, fmt.Sprintf("could not leave room: %v", err))
+		return
 	}
+	ev.session.User.ClearRoom()
 }
 
 func (h *Hub) handleDisconnect(ctx context.Context, ev disconnectEvent) {
@@ -175,6 +183,7 @@ func (h *Hub) handleDisconnect(ctx context.Context, ev disconnectEvent) {
 		if err := h.roomService.LeaveRoom(ctx, ev.session.User); err != nil {
 			h.log.Errorf("handleDisconnect leaveRoom: %v", err)
 		}
+		ev.session.User.ClearRoom()
 	}
 	if err := h.userService.Delete(ctx, ev.session.User); err != nil {
 		h.log.Errorf("handleDisconnect deleteUser: %v", err)

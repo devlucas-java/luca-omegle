@@ -134,6 +134,12 @@ func (h *Hub) handleSend(ctx context.Context, ev sendEvent) {
 		return
 	}
 
+	if ev.session.User.RoomID != roomID {
+		_ = ev.session.SendError(ctx, "you are not in room "+roomID)
+		h.log.Warnf("user %s tried to send to room %s but is in room %q", ev.session.User.ID, roomID, ev.session.User.RoomID)
+		return
+	}
+
 	out := dto.NewFrame(dto.CmdMessage, ev.frame.Body, map[string]string{
 		"room-id":  roomID,
 		"username": ev.session.User.UserName,

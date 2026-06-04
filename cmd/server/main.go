@@ -22,7 +22,7 @@ func main() {
 	const ttl = 24 * time.Hour
 
 	userRepo := cache.NewUserCH(ch, ttl)
-	roomRepo := cache.NewRoomCh(ch, ttl)
+	roomRepo := cache.NewRoomCh(ch, ttl, "room:")
 
 	userService := service.NewUserService(userRepo, log.WithComponent("UserService"))
 	roomService := service.NewRoomService(roomRepo, userRepo, log.WithComponent("RoomService"))
@@ -46,7 +46,6 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", wsHandler.ServeWS)
-	mux.Handle("/", http.FileServer(http.Dir("./static/")))
 
 	srv := &http.Server{
 		Addr:    ":" + conf.ServerPort,

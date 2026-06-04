@@ -17,8 +17,8 @@ type RoomCh struct {
 	key    string
 }
 
-func NewRoomCh(client *redis.Client, expire time.Duration) repository.RoomRepository {
-	return &RoomCh{client: client, expire: expire}
+func NewRoomCh(client *redis.Client, expire time.Duration, key string) repository.RoomRepository {
+	return &RoomCh{client: client, expire: expire, key: key}
 }
 
 func (r *RoomCh) Set(ctx context.Context, room *entity.Room) error {

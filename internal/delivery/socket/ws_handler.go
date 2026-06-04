@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -64,11 +65,11 @@ func (h *WSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		h.dispatch(session, frame)
+		h.dispatch(r.Context(), session, frame)
 	}
 }
 
-func (h *WSHandler) dispatch(s *dto.Session, f *dto.Frame) {
+func (h *WSHandler) dispatch(ctx context.Context, s *dto.Session, f *dto.Frame) {
 	switch f.Command {
 	case dto.CmdSend:
 		h.hub.sendCh <- sendEvent{session: s, frame: f}
@@ -87,7 +88,7 @@ func (h *WSHandler) dispatch(s *dto.Session, f *dto.Frame) {
 
 	default:
 		h.log.Warnf("unknown command %q from %s", f.Command, s.User.ID)
-		_ = s.SendError(nil, "unknown command: "+string(f.Command))
+		_ = s.SendError(ctx, "unknown command: "+string(f.Command))
 	}
 }
 

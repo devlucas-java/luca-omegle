@@ -34,22 +34,6 @@ func NewFrame(cmd Command, body string, headers map[string]string) *Frame {
 	return &Frame{Command: cmd, Headers: headers, Body: body}
 }
 
-func (f *Frame) Header(key string) (string, bool) {
-	v, ok := f.Headers[key]
-	if !ok || v == "" {
-		return "", ok
-	}
-	return v, ok
-}
-
-func (f *Frame) MustHeader(key string) (string, error) {
-	v, ok := f.Headers[key]
-	if !ok || v == "" {
-		return "", fmt.Errorf("missing required header %q", key)
-	}
-	return v, nil
-}
-
 // Encode serialises to wire format:
 //
 //	COMMAND\n

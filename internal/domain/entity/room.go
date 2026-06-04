@@ -5,10 +5,9 @@ import "github.com/google/uuid"
 const MaxUsersPerRoom = 2
 
 type Room struct {
-	ID       string     `json:"id"`
-	Name     string     `json:"name"`
-	UsersId  []string   `json:"users"`
-	Messages []*Message `json:"messages,omitempty"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	UsersId []string `json:"users"`
 }
 
 func NewRoom() *Room {
@@ -50,21 +49,4 @@ func (t *Room) RemoveUser(userId string) {
 		}
 	}
 	t.UsersId = list
-}
-
-func (t *Room) AddMessage(msg *Message) {
-	t.Messages = append(t.Messages, msg)
-}
-
-func (t *Room) RemoveMessage(message *Message) {
-	var list []*Message
-
-	for _, msg := range t.Messages {
-		if !msg.Equals(message.ID) {
-
-			list = append(list, msg)
-		}
-	}
-
-	t.Messages = list
 }
